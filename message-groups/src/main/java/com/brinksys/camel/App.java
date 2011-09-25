@@ -42,17 +42,9 @@ public class App {
                     .end()
                     .to("amq:queue:Message.Group.Test");
 
-                    from("amq:queue:Message.Group.Test").routeId("Route A").process(new Processor() {
-                        public void process(Exchange exchange) throws Exception {
-                            System.out.println("Route A Recieved :: " + exchange.getIn().getBody());
-                        }
-                    });
-
-                    from("amq:queue:Message.Group.Test").routeId("Route B").process(new Processor() {
-                        public void process(Exchange exchange) throws Exception {
-                            System.out.println("Route B Recieved :: " + exchange.getIn().getBody());
-                        }
-                    });
+                    /* These two are competing consumers */
+                    from("amq:queue:Message.Group.Test").routeId("Route A").log("Received: ${body}");
+                    from("amq:queue:Message.Group.Test").routeId("Route B").log("Received: ${body}");
                 }
             });
 
@@ -84,9 +76,14 @@ public class App {
         for (int i = 0; i < 10; i++) {
             pt.sendBody("direct:begin", Integer.valueOf(i));
         }
+
         for (int i = 0; i < 10; i++) {
             pt.sendBody("direct:begin", "next group");
         }
+
+        pt.sendBody("direct:begin", Integer.valueOf(1));
+        pt.sendBody("direct:begin", "foo");
+        pt.sendBody("direct:begin", Integer.valueOf(2));
     }
 
     private static void startBroker() throws Exception {
